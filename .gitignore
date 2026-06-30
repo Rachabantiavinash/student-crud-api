@@ -2,5 +2,4 @@ Include/
 Lib/ 
 Scripts/ 
 __pycache__/ 
-pyvenv.cfg 
-demo_sqlite.py
+pyvenv.cfg
