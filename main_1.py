@@ -1,4 +1,4 @@
-from fastapi import FastAPI,Depends
+from fastapi import FastAPI,Depends,HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from database import SessionLocal,engine,Base
@@ -22,11 +22,14 @@ def get_students(db:Session=Depends(get_db)):
 @app.get("/students/{id}")
 def get_one_student(id:int,db:Session=Depends(get_db)):
     student=db.query(StudentDB).filter(StudentDB.id==id).first()
-    if student:
-        return student
-    return {"error":"Student not found"}
-@app.post("/students")
+    if not student:
+        raise HTTPException(status_code=404,detail="Student not found")
+    return student
+@app.post("/students",status_code=201)
 def add_student(student:Student,db:Session=Depends(get_db)):
+    existing=db.query(StudentDB).filter(StudentDB.id==student.id).first()
+    if existing:
+        raise HTTPException(status_code=409,detail="Student with this id already exists")
     db_student=StudentDB(id=student.id,name=student.name,course=student.course)
     db.add(db_student)
     db.commit()
@@ -36,7 +39,7 @@ def add_student(student:Student,db:Session=Depends(get_db)):
 def update_student(id:int,updated_student:Student,db:Session=Depends(get_db)):
     student=db.query(StudentDB).filter(StudentDB.id==id).first()
     if not student:
-        return {"return":"Student not found"}
+        raise HTTPException(status_code=404,detail="Student not found")
     student.name=updated_student.name
     student.course=updated_student.course
     db.commit()
@@ -46,7 +49,7 @@ def update_student(id:int,updated_student:Student,db:Session=Depends(get_db)):
 def delete_student(id:int,db:Session=Depends(get_db)):
     student=db.query(StudentDB).filter(StudentDB.id==id).first()
     if not student:
-        return {"error":"Student not found"}
+        raise HTTPException(status_code=404,detail="Student not found")
     db.delete(student)
     db.commit()
     return {"message":"Student deleted","id":id}
